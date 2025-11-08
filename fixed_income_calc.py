@@ -473,42 +473,6 @@ def fwd_fut_tail(A_FUT_DV01, A_FWD_DV01, A_MULT, B_FUT_DV01, B_FWD_DV01, B_MULT)
                 ((A_FUT_DV01+A_FWD_DV01) * A_MULT))
     )
 
-def calculate_ytm(market_price, face_value, coupon_rate, time_to_maturity, periods_per_year=2, n_digits=4):
-    # Convert market_price from percent to actual price in currency terms.
-    market_price = market_price / 100.0 * face_value
-    coupon_rate = coupon_rate / 100.0
-    coupon_payment = face_value * coupon_rate / periods_per_year
-
-    def bond_price(ytm):
-        pv = 0
-        T = int(time_to_maturity * periods_per_year)
-        for t in range(1, T + 1):
-            pv += coupon_payment / (1 + ytm / periods_per_year) ** t
-        pv += face_value / (1 + ytm / periods_per_year) ** T
-        return pv
-
-    ytm_guess = coupon_rate
-    tolerance = 1e-6
-    max_iterations = 1000
-    ytm = ytm_guess
-
-    for _ in range(max_iterations):
-        price_at_ytm = bond_price(ytm)
-        delta_ytm = 1e-5
-        p_bp_up = bond_price(ytm + delta_ytm)
-        p_bp_dn = bond_price(ytm - delta_ytm)
-        price_derivative = (p_bp_up - p_bp_dn) / (2 * delta_ytm)
-
-        if abs(price_derivative) < 1e-8:
-            return round(ytm, n_digits)
-
-        ytm_new = ytm - (price_at_ytm - market_price) / price_derivative
-        if abs(ytm_new - ytm) < tolerance:
-            return round(ytm_new, n_digits)
-        ytm = ytm_new
-    print("YTM calculation did not converge within the maximum number of iterations.")
-    return ytm
-
 def _log_kpis(prefix: str = ""):
     logging.info(
         f"{prefix} KPIs :: "
