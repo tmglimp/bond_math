@@ -6,26 +6,23 @@ from datetime import datetime, timedelta
 import logging
 """
 SIA/FIA spot dirty formulas for:
- - No-arbitrage prices at market yield (BPrice, TPrice)
- - Accrued interest (aint)
- - Modified duration (MDur)
- - Macaulay duration (MacDur)
- - DV01 (PVBP)
- - Convexity (Cvx)
- - Basis overlay tails
- - Volcker Sensitivity
- - Volcker Stress
+- No-arbitrage prices at market yield (BPrice, TPrice)
+- Accrued interest (aint)
+- Modified duration (MDur)
+- Macaulay duration (MacDur)
+- DV01 (PVBP)
+- Convexity (Cvx)
+- Basis overlay tails
+- Volcker Sensitivity
+- Volcker Stress
 """
 
 def round_ytm(ytm):
-
     if pd.isnull(ytm):
         return None
     return round(ytm * 2) / 2.0
 
-# ---------------- Date & Term Functions ----------------
 def calculate_term(settlement_date_str, maturity_date_str, day_count_convention=365.25):
-
     settlement_date = datetime.strptime(settlement_date_str, '%Y%m%d')
     maturity_date = datetime.strptime(maturity_date_str, '%Y%m%d')
     days_to_maturity = (maturity_date - settlement_date).days
@@ -33,7 +30,6 @@ def calculate_term(settlement_date_str, maturity_date_str, day_count_convention=
     return term_in_years
 
 def compute_settlement_date(trade_date, t_plus=1):
-
     if isinstance(trade_date, str):
         trade_date = datetime.strptime(trade_date, '%Y%m%d')
     settlement_date = trade_date
@@ -44,9 +40,7 @@ def compute_settlement_date(trade_date, t_plus=1):
             business_days_added += 1
     return settlement_date.strftime('%Y%m%d')
 
-# ---------------- Yield and Price Functions ----------------
 def accrual_period(begin, settle, next_coupon, day_count=1):
-
     if day_count == 1:
         L = datetime.strptime(str(begin), '%Y%m%d')
         S = datetime.strptime(str(settle), '%Y%m%d')
@@ -59,7 +53,6 @@ def accrual_period(begin, settle, next_coupon, day_count=1):
         return (360 * (S[0] - L[0]) + 30 * (S[1] - L[1]) + S[2] - L[2]) / 180
 
 def aint(cpn, period=2, begin=None, settle=None, next_coupon=None, day_count=1):
-
     v = accrual_period(begin, settle, next_coupon, day_count)
     return cpn / period * v
 
@@ -312,16 +305,14 @@ def fut_Cvx(cpn, term, yield_, period=2, begin=None, settle=None, next_coupon=No
     if P is None or P == 0:
         return None
     v = accrual_period(begin, settle, next_coupon, day_count) if (begin and settle and next_coupon) else 0
-    dcv = (
-            -v * (v - 1) * pow(1 + Y, v - 2) * C / Y * (1 - pow(1 + Y, -T))
+    dcv = (-v * (v - 1) * pow(1 + Y, v - 2) * C / Y * (1 - pow(1 + Y, -T))
             - 2 * v * pow(1 + Y, v - 1) * (C / pow(Y, 2) * (1 - pow(1 + Y, -T)) - T * C / (Y * pow(1 + Y, T + 1)))
             - pow(1 + Y, v) * (
                     -C / pow(Y, 3) * (1 - pow(1 + Y, -T)) +
                     2 * T * C / (pow(Y, 2) * pow(1 + Y, T + 1)) +
                     T * (T + 1) * C / (Y * pow(1 + Y, T + 2))
             )
-            + (T - v) * (T + 1) * 100 / pow(1 + Y, T + 2 - v)
-    )
+            + (T - v) * (T + 1) * 100 / pow(1 + Y, T + 2 - v))
     return dcv / (P * period ** 2)/conv_factor
 
 def sensitivity22(cpn, term, yield_, period=2, begin=None, settle=None, next_coupon=None, day_count=1):
@@ -461,8 +452,7 @@ def fut_tail(A_FUT_DV01, A_MULT, B_FUT_DV01, B_MULT):
     return (-1 *
         (((A_FUT_DV01 * A_MULT) - (B_FUT_DV01 * B_MULT)) / (B_FUT_DV01 * B_MULT))
         if (A_FUT_DV01 * A_MULT) > (B_FUT_DV01 * B_MULT)
-        else (((B_FUT_DV01 * B_MULT) - (A_FUT_DV01 * A_MULT)) / (A_FUT_DV01 * A_MULT))
-    )
+        else (((B_FUT_DV01 * B_MULT) - (A_FUT_DV01 * A_MULT)) / (A_FUT_DV01 * A_MULT)))
 
 def fwd_fut_tail(A_FUT_DV01, A_FWD_DV01, A_MULT, B_FUT_DV01, B_FWD_DV01, B_MULT):
     return (-1 *
@@ -470,8 +460,7 @@ def fwd_fut_tail(A_FUT_DV01, A_FWD_DV01, A_MULT, B_FUT_DV01, B_FWD_DV01, B_MULT)
                 ((B_FUT_DV01+B_FWD_DV01) * B_MULT))
         if (A_FUT_DV01 * A_MULT) > (B_FUT_DV01 * B_MULT)
         else ((((B_FUT_DV01+B_FWD_DV01) * B_MULT) - ((A_FUT_DV01+A_FWD_DV01) * A_MULT)) /
-                ((A_FUT_DV01+A_FWD_DV01) * A_MULT))
-    )
+                ((A_FUT_DV01+A_FWD_DV01) * A_MULT)))
 
 def _log_kpis(prefix: str = ""):
     logging.info(
