@@ -5,13 +5,11 @@ import numpy as np
 from datetime import datetime
 import config
 
-# ─── Configuration ───
 #config.USTAPI_client_id
 #config.USTAPI_client_secret
 tcf_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "TCF.xlsx")
 output_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "UST.index.csv")
 
-# ─── Utilities ───
 def convert_date_format(iso_date):
     try:
         return datetime.strptime(iso_date, "%Y-%m-%d").strftime("%m/%d/%Y")
@@ -72,7 +70,6 @@ def compute_cf(coupon_rate, prev_cpn, next_cpn, mat_date, yield_rate=0.06):
 def get_coupon_bounds(issueDate, years_to_maturity, original_maturity):
     if pd.isna(issueDate) or pd.isna(years_to_maturity) or pd.isna(original_maturity):
         return None, None
-
     try:
         anchor = parse_date(issueDate)
     except:
@@ -96,7 +93,6 @@ def query_security_detail(cusip, issue_date):
     response.raise_for_status()
     return response.json()
 
-# ─── Main Logic ───
 def derive_cf():
     df = pd.read_excel(tcf_path, sheet_name="Security Database", header=2)
     cols_to_keep = ["OTR Issue", "Original Maturity", "Coupon", "Issue\nDate", "Maturity\nDate", "CUSIP",
@@ -139,8 +135,7 @@ def derive_cf():
 
         if pd.notna(row["prev_coupon"]) and pd.notna(row["next_coupon"]) else None,axis=1)
 
-    cols_to_drop = [
-        "issue_date_raw", "issue_date_x", "prev_coupon_str", "next_coupon_str", "maturity_str", "maturityDate", "interestRate",
+    cols_to_drop = ["issue_date_raw", "issue_date_x", "prev_coupon_str", "next_coupon_str", "maturity_str", "maturityDate", "interestRate",
         "refCpiOnIssueDate", "refCpiOnDatedDate", "announcementDate", "auctionDateYear", "datedDate", "accruedInterestPer1000", "accruedInterestPer100",
         "adjustedAccruedInterestPer1000", "adjustedPrice", "allocationPercentageDecimals", "announcedCusip", "auctionFormat", "averageMedianDiscountRate",
         "averageMedianInvestmentRate", "averageMedianPrice", "averageMedianDiscountMargin", "callDate", "calledDate", "cashManagementBillCMB",
@@ -154,8 +149,7 @@ def derive_cf():
         "pdfFilenameCompetitiveResults", "pdfFilenameNoncompetitiveResults", "pdfFilenameSpecialAnnouncement", "pricePer100",
         "reopening", "securityTermDayMonth", "securityTermWeekYear", "spread", "standardInterestPaymentPer1000", "strippable", "term", "tiinConversionFactorPer1000",
         "tips", "type", "unadjustedAccruedInterestPer1000", "unadjustedPrice", "updatedTimestamp", "xmlFilenameAnnouncement", "xmlFilenameCompetitiveResults",
-        "xmlFilenameSpecialAnnouncement", "tintCusip2", "tintCusip1DueDate", "tintCusip2DueDate", "issue_date_y", 'maturityDate'
-    ]
+        "xmlFilenameSpecialAnnouncement", "tintCusip2", "tintCusip1DueDate", "tintCusip2DueDate", "issue_date_y", 'maturityDate']
 
     df_parse.drop(columns=cols_to_drop, inplace=True, errors="ignore")
     df["prev_coupon"] = df["prev_coupon"].dt.strftime("%Y%m%d")
