@@ -439,7 +439,7 @@ def sia_gross_basis(fut_price, cf, dirty_price):
     return fut_price * cf - dirty_price
 
 def sia_convexity_yield(dirty_price, coupon, days):
-    return ((coupon / dirty_price) * (days / 365)) * (365 / days)
+    return ((coupon / dirty_price) * (days / 365))
 
 def sia_carry(gross_basis, implied_repo, dirty_price, days):
     financing_cost = dirty_price * implied_repo * days / 365
