@@ -79,6 +79,57 @@ def BPrice(cpn, term, yield_, period=2, begin=None, settle=None, next_coupon=Non
 
     return price
 
+from datetime import datetime
+
+def bond_yield(price_target, cpn, term, period=2,
+               begin=None, settle=None, next_coupon=None,
+               day_count=1, guess=0.05, tol=1e-10, max_iter=100):
+
+    # ---- accrual fraction (same logic as your function) ----
+    if day_count == 1:
+        L = datetime.strptime(str(begin), '%Y%m%d')
+        S = datetime.strptime(str(settle), '%Y%m%d')
+        N = datetime.strptime(str(next_coupon if next_coupon else settle), '%Y%m%d')
+        v = (S - L).days / (N - L).days
+    else:
+        L = [int(begin[:4]), int(begin[4:6]), int(begin[6:8])]
+        S = [int(settle[:4]), int(settle[4:6]), int(settle[6:8])]
+        v = (360*(S[0]-L[0]) + 30*(S[1]-L[1]) + S[2]-L[2]) / 180
+
+    theta = 1 - v
+
+    T = int(round(term) * period)
+    C = cpn / period
+
+    y = guess
+
+    for _ in range(max_iter):
+
+        Y = y / period
+        price = 0
+        deriv = 0
+
+        for k in range(1, T+1):
+            t = k - theta
+            df = (1 + Y) ** t
+
+            price += C / df
+            deriv += -C * t / ((1 + Y) ** (t+1))
+
+        price += 100 / ((1 + Y) ** (T - theta))
+        deriv += -100 * (T - theta) / ((1 + Y) ** (T - theta + 1))
+
+        deriv = deriv / period
+
+        f = price - price_target
+
+        if abs(f) < tol:
+            return y
+
+        y = y - f / deriv
+
+    return None
+
 def TPrice(cpn, term, yield_, period=2, begin=None, settle=None, next_coupon=None, day_count=1,conv_factor=None):
     if term is None or yield_ is None:
         return None
